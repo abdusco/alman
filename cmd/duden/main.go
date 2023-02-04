@@ -49,5 +49,6 @@ func main() {
 	}
 
 	if err := cliCtx.Run(); err != nil {
+		log.Fatal().Err(err)
 	}
 }
