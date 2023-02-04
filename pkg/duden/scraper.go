@@ -1,9 +1,11 @@
 package duden
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
+	"text/template"
 
 	"github.com/PuerkitoBio/goquery"
 
@@ -23,16 +25,39 @@ func NewDuden() *Duden {
 }
 
 type DictionaryEntry struct {
-	Word     string
-	Meanings []Meaning
+	Word     string    `json:"word"`
+	Meanings []Meaning `json:"meanings"`
 }
 
 type Meaning struct {
-	Meaning  string
-	Examples []string
+	Meaning  string   `json:"meaning"`
+	Examples []string `json:"examples"`
+}
+
+const entryTemplate = `
+# {{.Word}}
+{{- range .Meanings }}
+
+## {{ .Meaning }}
+{{- range .Examples }}
+- {{ . }}
+{{- end }}
+{{- end -}}
+`
+
+func (e DictionaryEntry) String() string {
+	t := template.Must(template.New("a").Parse(entryTemplate))
+	var b bytes.Buffer
+	t.Execute(&b, e)
+	return strings.TrimSpace(b.String())
+}
+
+func (d Duden) Find(word string) (DictionaryEntry, error) {
+	return d.findUsingURL(word)
 }
 
 func (d Duden) findUsingURL(word string) (DictionaryEntry, error) {
+	word = d.normalizeWord(word)
 	url := fmt.Sprintf("https://www.duden.de/rechtschreibung/%s", word)
 	html, err := d.fetcher.FetchHTML(url)
 	if err != nil {
@@ -75,4 +100,22 @@ func (d Duden) cleanText(text string) string {
 	text = strings.ReplaceAll(text, "\u00ad", "")
 	text = strings.ReplaceAll(text, " ", " ")
 	return text
+}
+
+var umlautMap = map[string]string{
+	"\u00dc": "UE",
+	"\u00c4": "AE",
+	"\u00d6": "OE",
+	"\u00fc": "ue",
+	"\u00e4": "ae",
+	"\u00f6": "oe",
+	"\u00df": "ss",
+	"\u00ad": "",
+}
+
+func (d Duden) normalizeWord(word string) string {
+	for find, replace := range umlautMap {
+		word = strings.ReplaceAll(word, find, replace)
+	}
+	return word
 }
