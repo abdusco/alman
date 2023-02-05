@@ -8,6 +8,7 @@ import (
 	"text/template"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/rs/zerolog/log"
 
 	"github.com/abdusco/alman/internal/http"
 )
@@ -24,57 +25,58 @@ func NewDuden() *Duden {
 	return &Duden{fetcher: http.ReqFetcher}
 }
 
-type DictionaryEntry struct {
-	Word     string    `json:"word"`
-	Meanings []Meaning `json:"meanings"`
+type Entry struct {
+	Word        string       `json:"word"`
+	Definitions []Definition `json:"definitions"`
 }
 
-type Meaning struct {
-	Meaning  string   `json:"meaning"`
-	Examples []string `json:"examples"`
+type Definition struct {
+	Definition string   `json:"definition"`
+	Examples   []string `json:"examples"`
 }
 
 const entryTemplate = `
 # {{.Word}}
-{{- range .Meanings }}
+{{- range .Definitions }}
 
-## {{ .Meaning }}
+## {{ .Definition }}
 {{- range .Examples }}
 - {{ . }}
 {{- end }}
 {{- end -}}
 `
 
-func (e DictionaryEntry) String() string {
+func (e Entry) String() string {
 	t := template.Must(template.New("a").Parse(entryTemplate))
 	var b bytes.Buffer
-	t.Execute(&b, e)
+	_ = t.Execute(&b, e)
 	return strings.TrimSpace(b.String())
 }
 
-func (d Duden) Find(word string) (DictionaryEntry, error) {
+func (d Duden) Find(word string) (Entry, error) {
+	log.Debug().Str("word", word).Msg("searching duden")
 	return d.findUsingURL(word)
 }
 
-func (d Duden) findUsingURL(word string) (DictionaryEntry, error) {
+func (d Duden) findUsingURL(word string) (Entry, error) {
 	word = d.normalizeWord(word)
 	url := fmt.Sprintf("https://www.duden.de/rechtschreibung/%s", word)
 	html, err := d.fetcher.FetchHTML(url)
 	if err != nil {
 		if errors.Is(err, http.ErrNotFound) {
 		}
-		return DictionaryEntry{}, fmt.Errorf("failed to fetch html: %w", err)
+		return Entry{}, fmt.Errorf("failed to fetch html: %w", err)
 	}
 	return d.parseEntry(html)
 }
 
-func (d Duden) parseEntry(html string) (DictionaryEntry, error) {
+func (d Duden) parseEntry(html string) (Entry, error) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
-		return DictionaryEntry{}, fmt.Errorf("failed to parse html: %w", err)
+		return Entry{}, fmt.Errorf("failed to parse html: %w", err)
 	}
 
-	var entry DictionaryEntry
+	var entry Entry
 
 	title := d.cleanText(doc.Find(".lemma__title").Text())
 	entry.Word = title
@@ -86,9 +88,9 @@ func (d Duden) parseEntry(html string) (DictionaryEntry, error) {
 			examples = append(examples, d.cleanText(el.Text()))
 		})
 
-		entry.Meanings = append(entry.Meanings, Meaning{
-			Meaning:  meaning,
-			Examples: examples,
+		entry.Definitions = append(entry.Definitions, Definition{
+			Definition: meaning,
+			Examples:   examples,
 		})
 	})
 
@@ -102,19 +104,20 @@ func (d Duden) cleanText(text string) string {
 	return text
 }
 
-var umlautMap = map[string]string{
-	"\u00dc": "UE",
-	"\u00c4": "AE",
-	"\u00d6": "OE",
-	"\u00fc": "ue",
-	"\u00e4": "ae",
-	"\u00f6": "oe",
-	"\u00df": "ss",
+var replacements = map[string]string{
+	"Ü":      "UE",
+	"Ä":      "AE",
+	"Ö":      "OE",
+	"ü":      "ue",
+	"ä":      "ae",
+	"ö":      "oe",
+	"ß":      "ss",
 	"\u00ad": "",
 }
 
 func (d Duden) normalizeWord(word string) string {
-	for find, replace := range umlautMap {
+	word = strings.TrimSpace(word)
+	for find, replace := range replacements {
 		word = strings.ReplaceAll(word, find, replace)
 	}
 	return word

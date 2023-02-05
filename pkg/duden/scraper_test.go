@@ -17,18 +17,18 @@ func TestDuden_findUsingURL(t *testing.T) {
 		name      string
 		word      string
 		html      fakeFetcher
-		assertRes func(t *testing.T, res DictionaryEntry, err error)
+		assertRes func(t *testing.T, res Entry, err error)
 	}{
 		{
 			name: "happy path",
 			word: "betreuen",
 			html: sampleHtml,
-			assertRes: func(t *testing.T, res DictionaryEntry, err error) {
-				expected := DictionaryEntry{
+			assertRes: func(t *testing.T, res Entry, err error) {
+				expected := Entry{
 					Word: "betreuen",
-					Meanings: []Meaning{
+					Definitions: []Definition{
 						{
-							Meaning: "vorübergehend in seiner Obhut haben, in Obhut nehmen; für jemanden, etwas sorgen",
+							Definition: "vorübergehend in seiner Obhut haben, in Obhut nehmen; für jemanden, etwas sorgen",
 							Examples: []string{
 								"Kinder, alte Leute, Tiere betreuen",
 								"eine Reiseleiterin betreut die Gruppe",
@@ -36,7 +36,7 @@ func TestDuden_findUsingURL(t *testing.T) {
 								"betreutes (ein mit einer Betreuung der betreffenden Person[en] verbundenes) Wohnen",
 							},
 						}, {
-							Meaning: "ein Sachgebiet o. Ä. fortlaufend bearbeiten; die Verantwortung für den Ablauf von etwas haben",
+							Definition: "ein Sachgebiet o. Ä. fortlaufend bearbeiten; die Verantwortung für den Ablauf von etwas haben",
 							Examples: []string{
 								"eine Abteilung, ein Arbeitsgebiet betreuen",
 								"sie betreut das Projekt zur Sanierung der Altbauten",
