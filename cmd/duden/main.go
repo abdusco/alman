@@ -1,15 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+
+	"github.com/charmbracelet/log"
 
 	"github.com/alecthomas/kong"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 
-	"github.com/abdusco/alman/pkg/duden"
+	"github.com/abdusco/alman/pkg/dwds"
 )
 
 type cliArgs struct {
@@ -19,8 +19,8 @@ type cliArgs struct {
 }
 
 func (a cliArgs) Run() error {
-	du := duden.NewDuden()
-	entry, err := du.Find(a.Word)
+	du := dwds.New()
+	entry, err := du.Find(context.Background(), a.Word)
 	if err != nil {
 		return err
 	}
@@ -43,12 +43,11 @@ func main() {
 	var args cliArgs
 	cliCtx := kong.Parse(&args, kong.Name("duden"))
 
-	log.Logger = log.Logger.Output(zerolog.ConsoleWriter{Out: os.Stderr}).Level(zerolog.InfoLevel)
 	if args.Debug {
-		log.Logger = log.Logger.Level(zerolog.DebugLevel)
+		log.SetLevel(log.DebugLevel)
 	}
 
 	if err := cliCtx.Run(); err != nil {
-		log.Fatal().Err(err)
+		log.Fatal("exit with error", "error", err)
 	}
 }

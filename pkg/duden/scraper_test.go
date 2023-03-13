@@ -1,6 +1,7 @@
 package duden
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,7 @@ import (
 
 type fakeFetcher string
 
-func (f fakeFetcher) FetchHTML(url string) (string, error) {
+func (f fakeFetcher) FetchHTML(context.Context, string) (string, error) {
 	return string(f), nil
 }
 
@@ -53,7 +54,7 @@ func TestDuden_findUsingURL(t *testing.T) {
 			d := Duden{
 				fetcher: tt.html,
 			}
-			actual, err := d.findUsingURL(tt.word)
+			actual, err := d.findUsingURL(context.Background(), tt.word)
 			tt.assertRes(t, actual, err)
 		})
 	}
