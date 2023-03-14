@@ -92,8 +92,16 @@ func (d Dwds) Find(ctx context.Context, word string) (Entry, error) {
 		el.Find(".dwdswb-kompetenzbeispiel").Each(func(_ int, el *goquery.Selection) {
 			examples = append(examples, strings.TrimSpace(el.Text()))
 		})
+		definition := strings.TrimSpace(el.Find(".dwdswb-definition").Text())
+		if definition == "" {
+			ref := el.Find(".dwdswb-verweis")
+			if content, ok := ref.Attr("data-content"); ok {
+				d, _ := goquery.NewDocumentFromReader(strings.NewReader(content))
+				definition = fmt.Sprintf("%s (%s)", ref.Text(), d.Text())
+			}
+		}
 		entry.Definitions = append(entry.Definitions, Definition{
-			Definition: strings.TrimSpace(el.Find(".dwdswb-definition").Text()),
+			Definition: definition,
 			Examples:   examples,
 		})
 	})
