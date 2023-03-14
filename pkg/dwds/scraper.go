@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -30,7 +31,7 @@ func New() Dwds {
 type Entry struct {
 	Word        string       `json:"word"`
 	Definitions []Definition `json:"definitions"`
-	Usages      []string
+	Usages      []string     `json:"usages"`
 }
 
 const entryTemplate = `
@@ -79,8 +80,7 @@ func (d Dwds) Find(ctx context.Context, word string) (Entry, error) {
 		return Entry{}, fmt.Errorf("failed to parse html: %w", err)
 	}
 
-	errText := doc.Find(".bg-danger").Text()
-	if strings.Contains(errText, "ist nicht in unseren gegenwartssprachlichen lexikalischen Quellen vorhanden") {
+	if errText := strings.TrimSpace(doc.Find(".bg-danger").Text()); regexp.MustCompile(`(?smi)nicht.+vorhanden`).MatchString(errText) {
 		return Entry{}, ErrNotFound
 	}
 
