@@ -1,0 +1,14 @@
+version: 3
+
+tasks:
+  deploy-duden:
+    cmds:
+      - go build -o ./out/duden ./cmd/duden/
+      - mv out/duden ~/bin/duden
+      - rm -rf ./out/duden
+
+  deploy-dwds:
+    cmds:
+      - go build -o ./out/dwds ./cmd/dwds/
+      - mv out/dwds ~/bin/dwds
+      - rm -rf ./out/dwds
