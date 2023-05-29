@@ -87,19 +87,35 @@ func (d Dwds) Find(ctx context.Context, word string) (Entry, error) {
 	entry := Entry{
 		Word: strings.TrimSpace(doc.Find(".dwdswb-ft-lemmaansatz").Text()),
 	}
-	doc.Find(".dwdswb-lesart").Each(func(_ int, el *goquery.Selection) {
+	doc.Find(".dwdswb-lesart > .dwdswb-lesart-content > .dwdswb-lesart").Each(func(_ int, el *goquery.Selection) {
 		var examples []string
 		el.Find(".dwdswb-kompetenzbeispiel").Each(func(_ int, el *goquery.Selection) {
 			examples = append(examples, strings.TrimSpace(el.Text()))
 		})
-		definition := strings.TrimSpace(el.Find(".dwdswb-definition").Text())
-		if definition == "" {
-			ref := el.Find(".dwdswb-verweis")
-			if content, ok := ref.Attr("data-content"); ok {
-				d, _ := goquery.NewDocumentFromReader(strings.NewReader(content))
-				definition = fmt.Sprintf("%s (%s)", ref.Text(), d.Text())
+
+		var definition string
+		for _, fn := range []func() string{
+			func() string {
+				return strings.TrimSpace(el.Find(".dwdswb-definition").Text())
+			},
+			func() string {
+				ref := el.Find(".dwdswb-verweis")
+				if content, ok := ref.Attr("data-content"); ok {
+					d, _ := goquery.NewDocumentFromReader(strings.NewReader(content))
+					return fmt.Sprintf("%s (%s)", ref.Text(), d.Text())
+				}
+				return ""
+			},
+		} {
+			if definition = fn(); definition != "" {
+				break
 			}
 		}
+
+		if definition == "" {
+			return
+		}
+
 		entry.Definitions = append(entry.Definitions, Definition{
 			Definition: definition,
 			Examples:   examples,

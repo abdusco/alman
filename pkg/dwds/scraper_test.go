@@ -13,7 +13,7 @@ func TestDwds_Find(t *testing.T) {
 	d := Dwds{
 		fetcher: http.ReqFetcher,
 	}
-	res, err := d.Find(context.Background(), "zuschütten")
+	res, err := d.Find(context.Background(), "schlaf")
 	assert.NoError(t, err)
 	t.Log(res.String())
 }
