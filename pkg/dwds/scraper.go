@@ -84,13 +84,18 @@ func (d Dwds) Find(ctx context.Context, word string) (Entry, error) {
 		return Entry{}, ErrNotFound
 	}
 
+	doc.RemoveFiltered(".dwdswb-fundstelle")
+
 	entry := Entry{
 		Word: strings.TrimSpace(doc.Find(".dwdswb-ft-lemmaansatz").Text()),
 	}
-	doc.Find(".dwdswb-lesart > .dwdswb-lesart-content > .dwdswb-lesart").Each(func(_ int, el *goquery.Selection) {
+
+	doc.Find(".dwdswb-lesart-def").Each(func(_ int, el *goquery.Selection) {
 		var examples []string
-		el.Find(".dwdswb-kompetenzbeispiel").Each(func(_ int, el *goquery.Selection) {
-			examples = append(examples, strings.TrimSpace(el.Text()))
+		el.NextAllFiltered(".dwdswb-verwendungsbeispiele").Each(func(_ int, el *goquery.Selection) {
+			el.Find(".dwdswb-kompetenzbeispiel, .dwdswb-beleg .dwdswb-belegtext").Each(func(_ int, el *goquery.Selection) {
+				examples = append(examples, strings.TrimSpace(el.Text()))
+			})
 		})
 
 		var definition string
